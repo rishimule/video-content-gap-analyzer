@@ -11,6 +11,7 @@ embeddings and Pegasus descriptions. Two operators:
 import os
 import time
 import logging
+from typing import Optional
 from datetime import datetime
 from collections import defaultdict
 
@@ -66,7 +67,7 @@ COVERAGE_GRID_SIZE = 10
 # Helper functions — API setup
 # ============================================================
 
-def get_twelvelabs_client():
+def get_twelvelabs_client() -> TwelveLabs:
     """Validate API key and return TwelveLabs client."""
     api_key = os.environ.get("TWELVELABS_API_KEY")
     if not api_key:
@@ -81,7 +82,7 @@ def get_twelvelabs_client():
 # Helper functions — Embedding (from notebook 01)
 # ============================================================
 
-def embed_sample(client, sample):
+def embed_sample(client: TwelveLabs, sample: fo.Sample) -> Optional[bool]:
     """Embed a single video sample via Marengo 3.0.
 
     Returns True on success, False on failure, None if skipped.
@@ -121,7 +122,9 @@ def embed_sample(client, sample):
         return False
 
 
-def embed_all_samples(client, dataset, ctx):
+def embed_all_samples(
+    client: TwelveLabs, dataset: fo.Dataset, ctx
+) -> tuple:
     """Embed all samples in dataset, reporting progress in the 0.0-0.25 range.
 
     Returns (success_count, fail_count, skip_count).
@@ -158,7 +161,7 @@ def embed_all_samples(client, dataset, ctx):
 # Helper functions — Clustering (from notebook 02)
 # ============================================================
 
-def run_clustering(dataset, n_clusters):
+def run_clustering(dataset: fo.Dataset, n_clusters: int) -> int:
     """Run KMeans clustering, outlier detection, and UMAP on embedded samples.
 
     Writes cluster_id, centroid_distance, is_outlier, umap_x, umap_y to each
@@ -256,7 +259,7 @@ def run_clustering(dataset, n_clusters):
 # Helper functions — Pegasus descriptions (from notebook 03)
 # ============================================================
 
-def find_cluster_representatives(dataset):
+def find_cluster_representatives(dataset: fo.Dataset) -> dict:
     """For each cluster_id, find the REPS_PER_CLUSTER samples closest to centroid."""
     clusters = defaultdict(list)
 
@@ -277,7 +280,7 @@ def find_cluster_representatives(dataset):
     return representatives
 
 
-def upload_asset(client, filepath):
+def upload_asset(client: TwelveLabs, filepath: str) -> Optional[object]:
     """Upload a video file as a Twelve Labs asset. Returns asset or None."""
     try:
         with open(filepath, "rb") as f:
@@ -288,7 +291,7 @@ def upload_asset(client, filepath):
         return None
 
 
-def analyze_via_asset(client, asset_id, prompt):
+def analyze_via_asset(client: TwelveLabs, asset_id: str, prompt: str) -> str:
     """Approach A: analyze directly using asset_id (no indexing)."""
     response = client.analyze(
         video=VideoContext_AssetId(asset_id=asset_id),
@@ -298,7 +301,7 @@ def analyze_via_asset(client, asset_id, prompt):
     return response.data
 
 
-def create_pegasus_index(client):
+def create_pegasus_index(client: TwelveLabs) -> str:
     """Create a Twelve Labs index with pegasus1.2 model support."""
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     index_name = f"{INDEX_NAME_PREFIX}-{timestamp}"
@@ -316,7 +319,9 @@ def create_pegasus_index(client):
     return index.id
 
 
-def index_and_analyze(client, index_id, asset_id, prompt):
+def index_and_analyze(
+    client: TwelveLabs, index_id: str, asset_id: str, prompt: str
+) -> str:
     """Approach B: index the asset, wait for ready, then analyze."""
     resp = client.indexes.indexed_assets.create(
         index_id=index_id,
@@ -341,7 +346,9 @@ def index_and_analyze(client, index_id, asset_id, prompt):
     return response.data
 
 
-def generate_description(client, filepath, use_indexing, index_id):
+def generate_description(
+    client: TwelveLabs, filepath: str, use_indexing: bool, index_id: Optional[str]
+) -> tuple:
     """Generate a Pegasus description for a video.
 
     Returns (description_or_None, use_indexing_updated).
@@ -387,7 +394,9 @@ def generate_description(client, filepath, use_indexing, index_id):
     return None, use_indexing
 
 
-def generate_cluster_labels(client, dataset, use_pegasus, ctx):
+def generate_cluster_labels(
+    client: TwelveLabs, dataset: fo.Dataset, use_pegasus: bool, ctx
+) -> dict:
     """Generate labels for each cluster and write cluster_label to all samples.
 
     Returns dict {cluster_id: label_str}.
@@ -459,7 +468,7 @@ def generate_cluster_labels(client, dataset, use_pegasus, ctx):
 # Helper functions — Gap detection (from notebook 04)
 # ============================================================
 
-def extract_cluster_data(dataset):
+def extract_cluster_data(dataset: fo.Dataset) -> tuple:
     """Extract embedded + clustered samples from the dataset.
 
     Returns (samples_list, embeddings, cluster_ids, umap_coords, cluster_labels_map).
@@ -507,7 +516,9 @@ def extract_cluster_data(dataset):
     return samples_list, embeddings, cluster_ids, umap_coords, cluster_labels_map
 
 
-def compute_centroids(embeddings_norm, cluster_ids):
+def compute_centroids(
+    embeddings_norm: np.ndarray, cluster_ids: np.ndarray
+) -> tuple:
     """Recompute L2-normalized cluster centroids from sample embeddings."""
     unique_ids = np.sort(np.unique(cluster_ids))
     centroids = []
@@ -522,7 +533,9 @@ def compute_centroids(embeddings_norm, cluster_ids):
     return centroids, unique_ids
 
 
-def detect_sparse_clusters(cluster_ids, cluster_labels_map, threshold=SPARSE_THRESHOLD):
+def detect_sparse_clusters(
+    cluster_ids: np.ndarray, cluster_labels_map: dict, threshold: int = SPARSE_THRESHOLD
+) -> list:
     """Flag clusters with fewer than threshold samples."""
     unique, counts = np.unique(cluster_ids, return_counts=True)
     sparse = []
@@ -538,7 +551,9 @@ def detect_sparse_clusters(cluster_ids, cluster_labels_map, threshold=SPARSE_THR
     return sparse
 
 
-def detect_isolated_clusters(centroids, unique_ids, cluster_labels_map):
+def detect_isolated_clusters(
+    centroids: np.ndarray, unique_ids: np.ndarray, cluster_labels_map: dict
+) -> list:
     """Identify clusters whose centroids are far from all others."""
     n_clusters = len(unique_ids)
     if n_clusters < 3:
@@ -566,7 +581,9 @@ def detect_isolated_clusters(centroids, unique_ids, cluster_labels_map):
     return isolated
 
 
-def compute_umap_coverage(umap_coords, grid_size=COVERAGE_GRID_SIZE):
+def compute_umap_coverage(
+    umap_coords: np.ndarray, grid_size: int = COVERAGE_GRID_SIZE
+) -> float:
     """Compute what fraction of the UMAP bounding box is occupied."""
     x_min, x_max = umap_coords[:, 0].min(), umap_coords[:, 0].max()
     y_min, y_max = umap_coords[:, 1].min(), umap_coords[:, 1].max()
@@ -594,7 +611,7 @@ def compute_umap_coverage(umap_coords, grid_size=COVERAGE_GRID_SIZE):
     return len(occupied) / (grid_size * grid_size)
 
 
-def embed_categories(client, categories):
+def embed_categories(client: TwelveLabs, categories: list) -> dict:
     """Embed category strings via Twelve Labs Marengo text API.
 
     Returns dict {category_str: np.ndarray(512,)} for successful embeddings.
@@ -630,10 +647,15 @@ def embed_categories(client, categories):
     return results
 
 
-def detect_category_gaps(category_embeddings, embeddings_norm, cluster_ids,
-                         unique_ids, cluster_labels_map,
-                         threshold=GAP_SIMILARITY_THRESHOLD,
-                         umap_coords=None):
+def detect_category_gaps(
+    category_embeddings: dict,
+    embeddings_norm: np.ndarray,
+    cluster_ids: np.ndarray,
+    unique_ids: np.ndarray,
+    cluster_labels_map: dict,
+    threshold: float = GAP_SIMILARITY_THRESHOLD,
+    umap_coords: Optional[np.ndarray] = None,
+) -> list:
     """Compare each category embedding to all sample embeddings."""
     categories = list(category_embeddings.keys())
     cat_matrix = np.array([category_embeddings[c] for c in categories])
@@ -664,7 +686,7 @@ def detect_category_gaps(category_embeddings, embeddings_norm, cluster_ids,
     return results
 
 
-def tag_sparse_samples(dataset, sparse_cluster_ids):
+def tag_sparse_samples(dataset: fo.Dataset, sparse_cluster_ids: set) -> int:
     """Tag samples in sparse clusters with 'sparse_cluster'."""
     tagged = 0
     for sample in dataset:
@@ -680,7 +702,9 @@ def tag_sparse_samples(dataset, sparse_cluster_ids):
     return tagged
 
 
-def detect_gaps(client, dataset, expected_categories, ctx):
+def detect_gaps(
+    client: TwelveLabs, dataset: fo.Dataset, expected_categories: list, ctx
+) -> dict:
     """Run full gap detection (structural + category-driven).
 
     Returns gap_report dict.
@@ -751,6 +775,8 @@ def detect_gaps(client, dataset, expected_categories, ctx):
 # ============================================================
 
 class AnalyzeCoverage(foo.Operator):
+    """Full pipeline operator: embed videos, cluster, describe, detect gaps."""
+
     @property
     def config(self):
         return foo.OperatorConfig(
@@ -921,6 +947,8 @@ class AnalyzeCoverage(foo.Operator):
 # ============================================================
 
 class ShowGapReport(foo.Operator):
+    """Display the gap detection report from the last analysis run."""
+
     @property
     def config(self):
         return foo.OperatorConfig(
