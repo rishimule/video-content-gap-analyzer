@@ -806,13 +806,34 @@ class AnalyzeCoverage(foo.Operator):
             c.strip() for c in expected_categories_str.split(",") if c.strip()
         ] if expected_categories_str else []
 
+        # Edge case: empty dataset
+        total = len(dataset)
+        if total == 0:
+            return {"error": "Dataset is empty. Add video samples before analyzing."}
+
+        # Edge case: very small dataset
+        if total < 3:
+            logger.warning(
+                "Dataset has only %d sample(s); forcing num_clusters=1", total
+            )
+            num_clusters = 1
+
         # Validate API key
-        client = get_twelvelabs_client()
+        try:
+            client = get_twelvelabs_client()
+        except RuntimeError as e:
+            return {"error": str(e)}
 
         # Stage 1: Embeddings (0.00 - 0.25)
         ctx.set_progress(progress=0.0, label="Stage 1/4: Generating video embeddings...")
         success, fail, skip = embed_all_samples(client, dataset, ctx)
         logger.info("Embeddings: %d new, %d failed, %d skipped", success, fail, skip)
+
+        if skip == total:
+            ctx.set_progress(
+                progress=0.25,
+                label=f"Using existing embeddings (all {skip} cached)",
+            )
 
         # Stage 2: Clustering (0.25 - 0.50)
         ctx.set_progress(progress=0.25, label="Stage 2/4: Clustering embeddings...")
@@ -846,6 +867,7 @@ class AnalyzeCoverage(foo.Operator):
 
     def resolve_output(self, ctx):
         outputs = types.Object()
+        outputs.str("error", label="Error", default=None)
         outputs.float("coverage_score", label="Coverage Score (0-1)")
         outputs.int("n_sparse_clusters", label="Sparse Clusters Found")
         outputs.int("n_category_gaps", label="Category Gaps Found")
