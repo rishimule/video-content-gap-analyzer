@@ -11,9 +11,5 @@ build/
 *.egg
 .DS_Store
 CLAUDE.md
-.claude/rules/api-integration.md
-.claude/rules/architecture.md
-.claude/rules/build-schedule.md
-.claude/rules/git-workflow.md
-.claude/rules/task-management.md
-.claude/rules/workflow.md
+.claude/
+PROBLEM_STATEMENT.md

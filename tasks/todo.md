@@ -1,6 +1,6 @@
 # Build Plan
 
-- [ ] Marengo embeddings working on 10 videos (12:30-1:00 PM)
+- [x] Marengo embeddings working on 10 videos (12:30-1:00 PM)
 - [ ] Clustering + UMAP reduction producing sensible groups (1:00-1:30 PM)
 - [ ] Pegasus cluster description generation (1:30-2:00 PM)
 - [ ] Gap detection logic via text embedding similarity (2:00-2:30 PM)
