@@ -21,6 +21,7 @@ import fiftyone.operators as foo
 import fiftyone.operators.types as types
 from fiftyone.operators.panel import Panel, PanelConfig
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
 from sklearn.preprocessing import normalize
 import umap
@@ -58,7 +59,7 @@ RATE_LIMIT_WAIT = 30
 
 # Gap detection
 SPARSE_THRESHOLD = 3
-GAP_SIMILARITY_THRESHOLD = 0.10
+GAP_SIMILARITY_THRESHOLD = 0.30
 ISOLATION_STD_FACTOR = 1.5
 COVERAGE_GRID_SIZE = 10
 
@@ -161,7 +162,39 @@ def embed_all_samples(
 # Helper functions — Clustering (from notebook 02)
 # ============================================================
 
-def run_clustering(dataset: fo.Dataset, n_clusters: int) -> int:
+def find_optimal_k(embeddings_norm: np.ndarray, k_max: int = 10) -> int:
+    """Find the optimal number of clusters using silhouette score.
+
+    Tests k=2..min(k_max, n_samples-1) and returns the k with highest score.
+    Falls back to 2 if no valid k is found.
+    """
+    n_samples = len(embeddings_norm)
+    k_upper = min(k_max, n_samples - 1)
+
+    if k_upper < 2:
+        return 1
+
+    best_k = 2
+    best_score = -1.0
+
+    for k in range(2, k_upper + 1):
+        kmeans = KMeans(
+            n_clusters=k, random_state=KMEANS_RANDOM_STATE, n_init=KMEANS_N_INIT
+        )
+        labels = kmeans.fit_predict(embeddings_norm)
+        score = silhouette_score(embeddings_norm, labels, metric="cosine")
+        if score > best_score:
+            best_score = score
+            best_k = k
+
+    logger.info("Auto-selected k=%d (silhouette=%.3f)", best_k, best_score)
+    return best_k
+
+def run_clustering(
+    dataset: fo.Dataset,
+    n_clusters: int,
+    outlier_std_factor: float = OUTLIER_STD_FACTOR,
+) -> tuple:
     """Run KMeans clustering, outlier detection, and UMAP on embedded samples.
 
     Writes cluster_id, centroid_distance, is_outlier, umap_x, umap_y to each
@@ -188,6 +221,10 @@ def run_clustering(dataset: fo.Dataset, n_clusters: int) -> int:
 
     embeddings = np.array(embeddings_list)
     embeddings_norm = normalize(embeddings, norm="l2")
+
+    # Auto-select k if requested (n_clusters == 0)
+    if n_clusters == 0:
+        n_clusters = find_optimal_k(embeddings_norm)
 
     # Clamp n_clusters to valid range
     if n_clusters > n_samples:
@@ -223,7 +260,7 @@ def run_clustering(dataset: fo.Dataset, n_clusters: int) -> int:
 
     # Outlier detection
     if std_dist > 0:
-        threshold = mean_dist + OUTLIER_STD_FACTOR * std_dist
+        threshold = mean_dist + outlier_std_factor * std_dist
         is_outlier = distances > threshold
     else:
         is_outlier = np.zeros(n_samples, dtype=bool)
@@ -252,7 +289,7 @@ def run_clustering(dataset: fo.Dataset, n_clusters: int) -> int:
         sample.save()
 
     dataset.save()
-    return n_samples
+    return n_samples, n_clusters
 
 
 # ============================================================
@@ -703,7 +740,11 @@ def tag_sparse_samples(dataset: fo.Dataset, sparse_cluster_ids: set) -> int:
 
 
 def detect_gaps(
-    client: TwelveLabs, dataset: fo.Dataset, expected_categories: list, ctx
+    client: TwelveLabs,
+    dataset: fo.Dataset,
+    expected_categories: list,
+    ctx,
+    gap_threshold: float = GAP_SIMILARITY_THRESHOLD,
 ) -> dict:
     """Run full gap detection (structural + category-driven).
 
@@ -736,6 +777,7 @@ def detect_gaps(
             category_results = detect_category_gaps(
                 category_embeddings, embeddings_norm, cluster_ids,
                 unique_ids, cluster_labels_map,
+                threshold=gap_threshold,
                 umap_coords=umap_coords,
             )
             n_covered = sum(1 for cr in category_results if not cr["is_gap"])
@@ -795,8 +837,11 @@ class AnalyzeCoverage(foo.Operator):
 
         inputs.int(
             "num_clusters",
-            label="Number of Clusters",
-            description="Number of clusters for grouping videos",
+            label="Number of Clusters (0 = auto)",
+            description=(
+                "Number of clusters for grouping videos. "
+                "Set to 0 to auto-select using silhouette score."
+            ),
             default=5,
         )
 
@@ -830,6 +875,26 @@ class AnalyzeCoverage(foo.Operator):
             default=0,
         )
 
+        inputs.float(
+            "outlier_threshold",
+            label="Outlier Threshold (std deviations)",
+            description=(
+                "Samples with centroid distance > mean + N*std are flagged as "
+                "outliers. Lower values flag more outliers."
+            ),
+            default=2.0,
+        )
+
+        inputs.float(
+            "gap_threshold",
+            label="Gap Similarity Threshold",
+            description=(
+                "Categories with max similarity below this value are flagged "
+                "as gaps. Higher values flag more gaps."
+            ),
+            default=0.3,
+        )
+
         return types.Property(
             inputs,
             view=types.View(label="Video Content Gap Analyzer"),
@@ -841,6 +906,8 @@ class AnalyzeCoverage(foo.Operator):
         expected_categories_str = ctx.params.get("expected_categories", "")
         use_pegasus = ctx.params.get("use_pegasus", True)
         max_samples = ctx.params.get("max_samples", 0)
+        outlier_threshold = ctx.params.get("outlier_threshold", 2.0)
+        gap_threshold = ctx.params.get("gap_threshold", 0.3)
 
         # Parse categories
         expected_categories = [
@@ -900,7 +967,9 @@ class AnalyzeCoverage(foo.Operator):
 
         # Stage 2: Clustering (0.25 - 0.50)
         ctx.set_progress(progress=0.25, label="Stage 2/4: Clustering embeddings...")
-        n_samples = run_clustering(dataset, num_clusters)
+        n_samples, num_clusters = run_clustering(
+            dataset, num_clusters, outlier_std_factor=outlier_threshold
+        )
         ctx.set_progress(
             progress=0.50,
             label=f"Clustered {n_samples} samples into {num_clusters} groups",
@@ -912,7 +981,10 @@ class AnalyzeCoverage(foo.Operator):
 
         # Stage 4: Gap detection (0.75 - 1.00)
         ctx.set_progress(progress=0.75, label="Stage 4/4: Detecting coverage gaps...")
-        gap_report = detect_gaps(client, dataset, expected_categories, ctx)
+        gap_report = detect_gaps(
+            client, dataset, expected_categories, ctx,
+            gap_threshold=gap_threshold,
+        )
 
         # Store report
         dataset.info["gap_report"] = gap_report
