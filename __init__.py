@@ -133,18 +133,22 @@ def embed_all_samples(client, dataset, ctx):
 
     for i, sample in enumerate(dataset):
         filename = os.path.basename(sample.filepath)
-        ctx.set_progress(
-            progress=0.25 * (i / max(total, 1)),
-            label=f"Embedding video {i + 1}/{total}: {filename}",
-        )
 
         result = embed_sample(client, sample)
         if result is None:
             skip_count += 1
+            status = "cached"
         elif result:
             success_count += 1
+            status = "done"
         else:
             fail_count += 1
+            status = "failed"
+
+        ctx.set_progress(
+            progress=0.25 * ((i + 1) / max(total, 1)),
+            label=f"Embedding video {i + 1}/{total} ({status}): {filename}",
+        )
 
     dataset.save()
     return success_count, fail_count, skip_count
@@ -403,7 +407,7 @@ def generate_cluster_labels(client, dataset, use_pegasus, ctx):
         for idx, cid in enumerate(sorted(representatives.keys())):
             ctx.set_progress(
                 progress=0.50 + 0.25 * (idx / max(n_clusters, 1)),
-                label=f"Describing cluster {cid + 1}/{n_clusters}...",
+                label=f"Generating description for cluster {idx + 1}/{n_clusters}...",
             )
 
             samples = representatives[cid]
