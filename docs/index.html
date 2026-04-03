@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Content Gap Analyzer</title>
+  <meta name="description" content="Find what's missing in your video dataset. A FiftyOne plugin powered by Twelve Labs.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect rx='20' width='100' height='100' fill='%236366f1'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='system-ui'>G</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Prevent flash of wrong theme -->
+  <script>
+    (function(){var t=localStorage.getItem('vcga-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark')})();
+  </script>
+</head>
+<body>
+
+  <!-- ========== NAVBAR ========== -->
+  <nav class="nav" role="navigation">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">Video Content Gap Analyzer</a>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+        <!-- Moon icon (shown in light mode → click to go dark) -->
+        <svg class="icon-moon" viewBox="0 0 24 24">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <!-- Sun icon (shown in dark mode → click to go light) -->
+        <svg class="icon-sun" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero">
+    <div class="hero-content">
+      <p class="label">Video Understanding AI Hackathon &middot; Northeastern &middot; April 2026</p>
+      <h1 class="heading-xl text-gradient">What's Missing<br>From Your Dataset?</h1>
+      <p class="hero-sub">The best model in the world can't learn from data that isn't there. We built a tool that finds the gaps.</p>
+      <p class="hero-team">Built by GAP SEEKERS</p>
+    </div>
+    <div class="scroll-indicator" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ========== THE PROBLEM ========== -->
+  <section class="problem-section">
+    <div class="container">
+      <h2 class="heading-lg reveal">Data curation beats<br>model complexity.</h2>
+
+      <div class="stat-block reveal">
+        <p class="quote">The winning submission in the 2025 Elderly Action Recognition Challenge used a 2019-era model. It won by 5+ points&thinsp;&mdash;&thinsp;by choosing better training data.</p>
+        <p class="attribution">&mdash; CV4Smalls Workshop findings</p>
+      </div>
+
+      <div class="problem-points reveal">
+        <p class="text-body">In high-stakes computer vision domains&thinsp;&mdash;&thinsp;elderly care, wildlife monitoring, workplace safety&thinsp;&mdash;&thinsp;labeled video data is scarce and expensive to collect.</p>
+        <p class="text-body">Researchers collect data blindly. They know what they have, but they have no way to see what they're missing.</p>
+        <p class="text-body">A dataset with 500 videos of "normal walking" and zero videos of "person falling" is dangerously imbalanced&thinsp;&mdash;&thinsp;but nothing tells you that today.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== THE SOLUTION ========== -->
+  <section class="solution-section">
+    <div class="container">
+      <h2 class="heading-lg reveal">See what's missing.<br>Collect what matters.</h2>
+
+      <div class="pipeline reveal-group reveal">
+        <!-- Step 1: Load -->
+        <div class="pipeline-step reveal-child">
+          <div class="pipeline-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </div>
+          <p class="pipeline-label">Load</p>
+          <p class="pipeline-desc">Load any video dataset into FiftyOne</p>
+        </div>
+
+        <!-- Step 2: Embed -->
+        <div class="pipeline-step reveal-child">
+          <div class="pipeline-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 2a7 7 0 0 1 0 14"/>
+              <path d="M12 8a7 7 0 0 0 0 14"/>
+              <line x1="12" y1="2" x2="12" y2="4"/>
+              <line x1="12" y1="20" x2="12" y2="22"/>
+            </svg>
+          </div>
+          <p class="pipeline-label">Embed</p>
+          <p class="pipeline-desc">Embed every video with Twelve Labs Marengo</p>
+        </div>
+
+        <!-- Step 3: Cluster -->
+        <div class="pipeline-step reveal-child">
+          <div class="pipeline-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="8" cy="8" r="2.5"/>
+              <circle cx="16" cy="8" r="2"/>
+              <circle cx="10" cy="16" r="2.5"/>
+              <circle cx="18" cy="15" r="1.5"/>
+              <circle cx="5" cy="13" r="1.5"/>
+            </svg>
+          </div>
+          <p class="pipeline-label">Cluster</p>
+          <p class="pipeline-desc">Group videos by semantic similarity</p>
+        </div>
+
+        <!-- Step 4: Describe -->
+        <div class="pipeline-step reveal-child">
+          <div class="pipeline-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+              <line x1="7" y1="7" x2="7.01" y2="7"/>
+            </svg>
+          </div>
+          <p class="pipeline-label">Describe</p>
+          <p class="pipeline-desc">Auto-label clusters with Pegasus</p>
+        </div>
+
+        <!-- Step 5: Detect Gaps -->
+        <div class="pipeline-step reveal-child">
+          <div class="pipeline-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <line x1="8" y1="11" x2="14" y2="11"/>
+              <line x1="11" y1="8" x2="11" y2="14"/>
+            </svg>
+          </div>
+          <p class="pipeline-label">Detect Gaps</p>
+          <p class="pipeline-desc">Find what's sparse, what's missing, what to collect next</p>
+        </div>
+      </div>
+
+      <p class="pipeline-note reveal">All from a single operator click in the FiftyOne App.</p>
+    </div>
+  </section>
+
+  <!-- ========== HOW IT WORKS ========== -->
+  <section class="how-section">
+    <div class="container">
+      <h2 class="heading-lg reveal">Under the hood</h2>
+
+      <div class="features reveal-group reveal">
+        <div class="feature reveal-child">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <rect x="2" y="2" width="20" height="20" rx="3"/>
+              <line x1="7" y1="2" x2="7" y2="22"/>
+              <line x1="17" y1="2" x2="17" y2="22"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <line x1="2" y1="7" x2="22" y2="7"/>
+              <line x1="2" y1="17" x2="22" y2="17"/>
+            </svg>
+          </div>
+          <h3 class="heading-md">Marengo Embeddings</h3>
+          <p class="text-body">Every video becomes a 512-dimensional vector in a shared multimodal space. Videos that look similar live close together. Videos that don't, live apart.</p>
+        </div>
+
+        <div class="feature reveal-child">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <circle cx="6" cy="6" r="2"/>
+              <circle cx="18" cy="6" r="2"/>
+              <circle cx="6" cy="18" r="2"/>
+              <circle cx="18" cy="18" r="2"/>
+              <line x1="8" y1="6" x2="16" y2="6"/>
+              <line x1="6" y1="8" x2="6" y2="16"/>
+              <line x1="18" y1="8" x2="18" y2="16"/>
+              <line x1="8" y1="18" x2="16" y2="18"/>
+              <path d="M9 9l6 6" opacity="0.4"/>
+              <path d="M15 9l-6 6" opacity="0.4"/>
+            </svg>
+          </div>
+          <h3 class="heading-md">Smart Clustering + UMAP</h3>
+          <p class="text-body">KMeans groups your videos. UMAP collapses 512 dimensions into 2 so you can actually see the structure. Outliers light up. Sparse clusters get flagged.</p>
+        </div>
+
+        <div class="feature reveal-child">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <h3 class="heading-md">Gap Detection</h3>
+          <p class="text-body">Tell us what categories you expect. We embed your categories, compare them to what exists, and show you exactly what's missing&thinsp;&mdash;&thinsp;with a coverage score.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== EXAMPLE OUTPUT ========== -->
+  <section class="output-section">
+    <div class="container">
+      <h2 class="heading-lg reveal">What you get</h2>
+
+      <div class="report-block reveal">
+        <div class="report-dots" aria-hidden="true">
+          <span class="dot-red"></span>
+          <span class="dot-yellow"></span>
+          <span class="dot-green"></span>
+        </div>
+        <pre><span class="text-dim">═══════════════════════════════════════════════</span>
+<span class="text-white"> VIDEO CONTENT GAP ANALYZER — Coverage Report</span>
+<span class="text-dim">═══════════════════════════════════════════════</span>
+
+<span class="text-dim">Dataset:</span> <span class="text-white">Safe_and_Unsafe_Behaviours</span> <span class="text-dim">(691 videos)</span>
+<span class="text-dim">Clusters:</span> <span class="text-white">6</span>
+
+<span class="text-accent">Cluster 0:</span> <span class="text-white">"Workers walking in designated areas"</span>     — 187 samples <span class="sym-ok">✓</span>
+<span class="text-accent">Cluster 1:</span> <span class="text-white">"Forklift loading operations"</span>              —  23 samples <span class="sym-warn">⚠ sparse</span>
+<span class="text-accent">Cluster 2:</span> <span class="text-white">"Worker at conveyor belt"</span>                  — 145 samples <span class="sym-ok">✓</span>
+<span class="text-accent">Cluster 3:</span> <span class="text-white">"Unauthorized zone entry"</span>                  —  41 samples <span class="sym-ok">✓</span>
+<span class="text-accent">Cluster 4:</span> <span class="text-white">"Supervisor inspection walkthrough"</span>        —  12 samples <span class="sym-warn">⚠ sparse</span>
+<span class="text-accent">Cluster 5:</span> <span class="text-white">"Vehicle movement in loading dock"</span>         —  38 samples <span class="sym-ok">✓</span>
+
+<span class="text-white">MISSING CATEGORIES:</span>
+<span class="sym-miss">✗</span> <span class="text-white">"Person falling or tripping"</span>       — max similarity: <span class="sym-miss">0.18</span> <span class="text-dim">(NO MATCH)</span>
+<span class="sym-miss">✗</span> <span class="text-white">"Emergency evacuation"</span>             — max similarity: <span class="sym-miss">0.12</span> <span class="text-dim">(NO MATCH)</span>
+<span class="sym-miss">✗</span> <span class="text-white">"Fire or smoke detection"</span>          — max similarity: <span class="sym-miss">0.09</span> <span class="text-dim">(NO MATCH)</span>
+
+<span class="text-dim">Coverage Score:</span> <span class="sym-warn">62%</span>
+<span class="text-dim">Recommendation:</span> <span class="text-white">Collect data for 3 missing categories.</span>
+<span class="text-dim">═══════════════════════════════════════════════</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== WHY IT MATTERS ========== -->
+  <section class="domains-section">
+    <div class="container">
+      <h2 class="heading-lg reveal">Built for domains where data is scarce and stakes are high</h2>
+
+      <div class="domains reveal-group reveal">
+        <!-- Elderly Care -->
+        <div class="domain reveal-child">
+          <div class="domain-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </div>
+          <p class="domain-label">Elderly Care</p>
+        </div>
+
+        <!-- Workplace Safety -->
+        <div class="domain reveal-child">
+          <div class="domain-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M2 20h20"/>
+              <path d="M5 20V8l7-5 7 5v12"/>
+              <rect x="9" y="12" width="6" height="8"/>
+              <line x1="12" y1="12" x2="12" y2="16"/>
+            </svg>
+          </div>
+          <p class="domain-label">Workplace Safety</p>
+        </div>
+
+        <!-- Wildlife Conservation -->
+        <div class="domain reveal-child">
+          <div class="domain-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M6 3c0 0-3 5-3 8a6 6 0 0 0 12 0c0-3-3-8-3-8"/>
+              <path d="M12 3c0 0-3 5-3 8a6 6 0 0 0 12 0c0-3-3-8-3-8"/>
+              <line x1="9" y1="21" x2="9" y2="18"/>
+              <line x1="15" y1="21" x2="15" y2="18"/>
+            </svg>
+          </div>
+          <p class="domain-label">Wildlife Conservation</p>
+        </div>
+
+        <!-- Clinical Monitoring -->
+        <div class="domain reveal-child">
+          <div class="domain-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <p class="domain-label">Clinical Monitoring</p>
+        </div>
+      </div>
+
+      <p class="domains-note reveal">In these domains, missing a category in your training data means missing real events in production.</p>
+    </div>
+  </section>
+
+  <!-- ========== TECH STACK ========== -->
+  <section class="stack-section">
+    <div class="container">
+      <h2 class="heading-lg reveal">Built with</h2>
+
+      <div class="stack-list reveal-group reveal">
+        <span class="stack-item reveal-child">FiftyOne by Voxel51</span>
+        <span class="stack-item reveal-child">Twelve Labs Marengo 3.0</span>
+        <span class="stack-item reveal-child">Twelve Labs Pegasus 1.2</span>
+        <span class="stack-item reveal-child">scikit-learn</span>
+        <span class="stack-item reveal-child">UMAP</span>
+        <span class="stack-item reveal-child">Python</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-name">Video Content Gap Analyzer</p>
+      <p class="footer-event">Built at the Video Understanding AI Hackathon &middot; Northeastern &middot; April 2026</p>
+      <p class="footer-team">GAP SEEKERS</p>
+      <a href="https://github.com/[OWNER]/video-content-gap-analyzer" target="_blank" rel="noopener">View on GitHub &rarr;</a>
+    </div>
+  </footer>
+
+  <!-- ========== BACK TO TOP ========== -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg viewBox="0 0 24 24">
+      <polyline points="18 15 12 9 6 15"/>
+    </svg>
+  </button>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
