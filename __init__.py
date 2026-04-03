@@ -794,6 +794,16 @@ class AnalyzeCoverage(foo.Operator):
             default=True,
         )
 
+        inputs.int(
+            "max_samples",
+            label="Max Samples (0 = all)",
+            description=(
+                "Maximum number of samples to process. Set to 0 to process all "
+                "samples. Useful for large datasets to limit API costs and time."
+            ),
+            default=0,
+        )
+
         return types.Property(
             inputs,
             view=types.View(label="Video Content Gap Analyzer"),
@@ -804,6 +814,7 @@ class AnalyzeCoverage(foo.Operator):
         num_clusters = ctx.params.get("num_clusters", 5)
         expected_categories_str = ctx.params.get("expected_categories", "")
         use_pegasus = ctx.params.get("use_pegasus", True)
+        max_samples = ctx.params.get("max_samples", 0)
 
         # Parse categories
         expected_categories = [
@@ -814,6 +825,28 @@ class AnalyzeCoverage(foo.Operator):
         total = len(dataset)
         if total == 0:
             return {"error": "Dataset is empty. Add video samples before analyzing."}
+
+        # Subsample if max_samples is set
+        if max_samples > 0 and total > max_samples:
+            logger.info(
+                "Subsampling %d of %d samples (max_samples=%d)",
+                max_samples, total, max_samples,
+            )
+            dataset = dataset.take(max_samples)
+            total = len(dataset)
+
+        # Large dataset warning
+        if total > 100:
+            logger.warning(
+                "Large dataset (%d samples). This may take a while and "
+                "incur significant API costs. Consider setting max_samples.",
+                total,
+            )
+            ctx.set_progress(
+                progress=0.0,
+                label=f"WARNING: {total} samples — this may take a while. "
+                "Consider using max_samples to limit processing.",
+            )
 
         # Edge case: very small dataset
         if total < 3:
