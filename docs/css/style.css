@@ -211,6 +211,45 @@ a:hover {
   color: var(--accent);
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-icon-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--icon-bg);
+  color: var(--text-muted);
+  transition: background 0.3s ease, color 0.3s ease, transform 0.2s ease;
+}
+
+.nav-icon-link:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.nav-icon-link:active {
+  transform: scale(0.95);
+}
+
+.nav-icon-link svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .theme-toggle {
   display: flex;
   align-items: center;
