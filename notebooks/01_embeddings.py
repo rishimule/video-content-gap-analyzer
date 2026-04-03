@@ -1,9 +1,9 @@
 """
 01_embeddings.py — Generate Marengo embeddings for video dataset.
 
-Loads the Safe & Unsafe Behaviours dataset from HuggingFace (10 samples),
-generates 512-d Marengo embeddings via Twelve Labs API, and stores them
-in FiftyOne sample fields.
+Loads the Safe & Unsafe Behaviours dataset from FiftyOne (or HuggingFace),
+selects a balanced subset across categories, generates 512-d Marengo
+embeddings via Twelve Labs API, and stores them in FiftyOne sample fields.
 """
 
 import os
@@ -12,6 +12,10 @@ import time
 import fiftyone as fo
 from fiftyone.utils.huggingface import load_from_hub
 from twelvelabs import TwelveLabs, VideoInputRequest, MediaSource
+
+# --- Configuration ---
+MAX_SAMPLES = 30  # Total samples to embed
+DATASET_NAME = "Voxel51/Safe_and_Unsafe_Behaviours"
 
 
 def main():
@@ -25,27 +29,60 @@ def main():
 
     client = TwelveLabs(api_key=api_key)
 
-    # --- Load dataset ---
-    print("Loading Safe & Unsafe Behaviours dataset (max_samples=10)...")
-    dataset = load_from_hub("Voxel51/Safe_and_Unsafe_Behaviours", max_samples=10)
-    print(f"Loaded {len(dataset)} samples\n")
+    # --- Load or reuse dataset ---
+    if fo.dataset_exists(DATASET_NAME):
+        print(f"Using existing dataset: {DATASET_NAME}")
+        dataset = fo.load_dataset(DATASET_NAME)
+    else:
+        print(f"Loading {DATASET_NAME} from HuggingFace...")
+        dataset = load_from_hub(DATASET_NAME)
+    print(f"  Total samples: {len(dataset)}\n")
 
-    # --- Generate embeddings ---
+    # --- Select balanced subset across categories ---
+    from collections import Counter
+
+    all_labels = [s.ground_truth.label for s in dataset if s.ground_truth]
+    categories = list(Counter(all_labels).keys())
+    n_categories = len(categories)
+    per_category = MAX_SAMPLES // n_categories
+
+    print(f"Selecting {MAX_SAMPLES} samples ({per_category} per category)...")
+    print(f"  Categories: {categories}\n")
+
+    selected_ids = []
+    for cat in categories:
+        view = dataset.match({"ground_truth.label": cat}).limit(per_category)
+        selected_ids.extend([s.id for s in view])
+        print(f"  {cat}: {len(view)} samples selected")
+
+    subset = dataset.select(selected_ids)
+    print(f"\n  Subset size: {len(subset)}")
+
+    # --- Generate embeddings (skip already-embedded samples) ---
     success_count = 0
     fail_count = 0
+    skip_count = 0
 
-    for i, sample in enumerate(dataset, start=1):
+    for i, sample in enumerate(subset, start=1):
         filepath = sample.filepath
         filename = os.path.basename(filepath)
-        print(f"[{i}/{len(dataset)}] Embedding: {filename}")
+
+        # Skip if already embedded
+        try:
+            if sample["embedding"] is not None:
+                skip_count += 1
+                print(f"[{i}/{len(subset)}] {filename} — already embedded, skipping")
+                continue
+        except (KeyError, AttributeError):
+            pass
+
+        print(f"[{i}/{len(subset)}] Embedding: {filename} ... ", end="", flush=True)
 
         start = time.time()
         try:
-            # Upload video file to Twelve Labs
             with open(filepath, "rb") as f:
                 asset = client.assets.create(method="direct", file=f)
 
-            # Generate fused asset-level embedding
             response = client.embed.v_2.create(
                 input_type="video",
                 model_name="marengo3.0",
@@ -57,32 +94,34 @@ def main():
                 ),
             )
 
-            # Extract embedding vector
             embedding = response.data[0].embedding
             sample["embedding"] = embedding
             sample.save()
 
             elapsed = time.time() - start
             success_count += 1
-            print(f"  -> {len(embedding)}-d vector in {elapsed:.1f}s")
+            print(f"{len(embedding)}-d ({elapsed:.1f}s)")
 
         except Exception as e:
             elapsed = time.time() - start
             fail_count += 1
-            print(f"  -> FAILED after {elapsed:.1f}s: {e}")
+            print(f"FAILED ({elapsed:.1f}s): {e}")
             continue
 
     # --- Save and summarize ---
     dataset.save()
-    print(f"\nDone! {success_count} embedded, {fail_count} failed.")
+    print(f"\nDone! {success_count} embedded, {fail_count} failed, {skip_count} skipped.")
 
     # Verify dimensionality on first successful sample
-    for sample in dataset:
-        if sample["embedding"] is not None:
-            print(f"Embedding dimensionality: {len(sample['embedding'])}")
-            break
+    for sample in subset:
+        try:
+            if sample["embedding"] is not None:
+                print(f"Embedding dimensionality: {len(sample['embedding'])}")
+                break
+        except (KeyError, AttributeError):
+            continue
 
-    print(f"Dataset: {dataset.name} ({len(dataset)} samples)")
+    print(f"Dataset: {dataset.name} ({len(dataset)} total, {len(subset)} in subset)")
 
 
 if __name__ == "__main__":
