@@ -1002,7 +1002,9 @@ class AnalyzeCoverage(foo.Operator):
 
     def resolve_output(self, ctx):
         outputs = types.Object()
-        outputs.str("error", label="Error", default=None)
+        result = ctx.results or {}
+        if "error" in result:
+            outputs.str("error", label="Error")
         outputs.float("coverage_score", label="Coverage Score (0-1)")
         outputs.int("n_sparse_clusters", label="Sparse Clusters Found")
         outputs.int("n_category_gaps", label="Category Gaps Found")
@@ -1271,7 +1273,8 @@ class CoveragePanel(Panel):
             "paper_bgcolor": "rgba(0,0,0,0)",
         }
 
-        ctx.panel.set_data("scatter_plot", {"data": traces, "layout": layout})
+        ctx.panel.state.plot_data = traces
+        ctx.panel.state.plot_layout = layout
 
         # Score markdown
         ctx.panel.state.score_md = (
@@ -1340,6 +1343,8 @@ class CoveragePanel(Panel):
         # Scatter plot
         panel.plot(
             "scatter_plot",
+            data=ctx.panel.get_state("plot_data", []),
+            layout=ctx.panel.get_state("plot_layout", {}),
             on_click=self.on_click_scatter,
         )
 
